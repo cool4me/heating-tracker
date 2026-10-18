@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Επεξεργασία Καταγραφής</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light py-4">
+  <div class="container" style="max-width: 500px;">
+    <div class="card p-4 shadow-sm">
+      <h5 class="fw-bold mb-3">Επεξεργασία Καταγραφής</h5>
+      
+      <form action="/edit/<%= log._id %>" method="POST">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Ημερομηνία</label>
+          <input type="date" name="date" class="form-control" value="<%= new Date(log.date).toISOString().split('T')[0] %>" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Είδος Καυσίμου</label>
+          <select name="fuelType" class="form-select" id="fuelSelect" onchange="updateUnits()" required>
+            <option value="Πετρέλαιο" <%= log.fuelType === 'Πετρέλαιο' ? 'selected' : '' %>>🛢️ Πετρέλαιο</option>
+            <option value="Πέλλετ" <%= log.fuelType === 'Πέλλετ' ? 'selected' : '' %>>🟢 Πέλλετ</option>
+            <option value="Ξύλα" <%= log.fuelType === 'Ξύλα' ? 'selected' : '' %>>🪵 Ξύλα</option>
+            <option value="Άλλο" <%= log.fuelType === 'Άλλο' ? 'selected' : '' %>>⚡ Άλλο</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Ποσότητα</label>
+          <input type="number" step="0.01" name="amount" class="form-control" value="<%= log.amount %>" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Μονάδα</label>
+          <select name="unit" class="form-select" id="unitSelect" required>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Τιμή Μονάδας (€)</label>
+          <input type="number" step="0.001" name="unitPrice" class="form-control" value="<%= log.unitPrice %>">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Σημειώσεις</label>
+          <input type="text" name="notes" class="form-control" value="<%= log.notes || '' %>">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100">Ενημέρωση</button>
+          <a href="/" class="btn btn-outline-secondary w-100">Ακύρωση</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const currentUnit = "<%= log.unit %>";
+    const fuelUnits = {
+      'Πετρέλαιο': ['λίτρα'],
+      'Πέλλετ': ['σακιά (15kg)', 'κιλά'],
+      'Ξύλα': ['κιλά', 'm³'],
+      'Άλλο': ['μονάδες']
+    };
+
+    function updateUnits() {
+      const fuelSelect = document.getElementById('fuelSelect');
+      const unitSelect = document.getElementById('unitSelect');
+      const selectedFuel = fuelSelect.value;
+
+      unitSelect.innerHTML = '';
+      fuelUnits[selectedFuel].forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit;
+        option.textContent = unit;
+        if(unit === currentUnit) option.selected = true;
+        unitSelect.appendChild(option);
+      });
+    }
+
+    updateUnits();
+  </script>
+</body>
+</html>

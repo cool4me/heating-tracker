@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Καταγραφή Θέρμανσης</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif; }
+    .card { border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .btn-custom { border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body class="pb-5">
+
+  <div class="container mt-4" style="max-width: 700px;">
+    
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="fw-bold m-0"><i class="bi bi-fire text-danger me-2"></i>Θέρμανση Σπιτιού</h3>
+      <a href="/export" class="btn btn-outline-success btn-sm btn-custom">
+        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+      </a>
+    </div>
+
+    <!-- ΦΟΡΜΑ ΚΑΤΑΓΡΑΦΗΣ -->
+    <div class="card p-3 p-md-4 mb-4">
+      <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-plus-circle me-1"></i> Νέα Καταγραφή</h5>
+      <form action="/add" method="POST">
+        
+        <div class="row g-3">
+          <!-- Ημερομηνία -->
+          <div class="col-6">
+            <label class="form-label small fw-bold">Ημερομηνία</label>
+            <input type="date" name="date" class="form-control" id="dateInput" required>
+          </div>
+
+          <!-- Είδος Καυσίμου -->
+          <div class="col-6">
+            <label class="form-label small fw-bold">Είδος Καυσίμου</label>
+            <select name="fuelType" class="form-select" id="fuelSelect" onchange="updateUnits()" required>
+              <option value="Πετρέλαιο">🛢️ Πετρέλαιο</option>
+              <option value="Πέλλετ">🟢 Πέλλετ</option>
+              <option value="Ξύλα">🪵 Ξύλα</option>
+              <option value="Άλλο">⚡ Άλλο</option>
+            </select>
+          </div>
+
+          <!-- Ποσότητα -->
+          <div class="col-6">
+            <label class="form-label small fw-bold">Ποσότητα</label>
+            <input type="number" step="0.01" name="amount" class="form-control" placeholder="π.χ. 2.5" required>
+          </div>
+
+          <!-- Μονάδα Μέτρησης -->
+          <div class="col-6">
+            <label class="form-label small fw-bold">Μονάδα</label>
+            <select name="unit" class="form-select" id="unitSelect" required>
+              <!-- Δυναμική αλλαγή μέσω JS -->
+            </select>
+          </div>
+
+          <!-- Τιμή Μονάδας (€) -->
+          <div class="col-12">
+            <label class="form-label small fw-bold">Τιμή Μονάδας (€) <span class="text-muted fw-normal">(προαιρετικά)</span></label>
+            <input type="number" step="0.001" name="unitPrice" class="form-control" placeholder="π.χ. 1.25 για πετρέλαιο ή 6.50 για σακί">
+          </div>
+
+          <!-- Σημειώσεις -->
+          <div class="col-12">
+            <label class="form-label small fw-bold">Σημειώσεις</label>
+            <input type="text" name="notes" class="form-control" placeholder="π.χ. Πολύ κρύο, λειτούργησε 8 ώρες">
+          </div>
+
+          <div class="col-12 mt-3">
+            <button type="submit" class="btn btn-danger w-100 btn-custom py-2 fw-bold">
+              <i class="bi bi-check-lg me-1"></i> Αποθήκευση
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ΣΤΑΤΙΣΤΙΚΑ -->
+    <div class="card p-3 mb-4 bg-white">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold text-uppercase text-muted m-0">Σύνολο Δαπάνης</h6>
+        <span class="badge bg-danger fs-6"><%= totalCostAll.toFixed(2) %> €</span>
+      </div>
+      <div class="row text-center g-2 mt-1">
+        <% Object.keys(totalsByFuel).forEach(fuel => { %>
+          <% if(totalsByFuel[fuel].amount > 0) { %>
+            <div class="col-6 col-md-3">
+              <div class="p-2 border rounded bg-light">
+                <div class="small fw-bold text-secondary"><%= fuel %></div>
+                <div class="fw-bold text-dark"><%= totalsByFuel[fuel].amount %></div>
+                <div class="text-success small fw-bold"><%= totalsByFuel[fuel].cost.toFixed(2) %> €</div>
+              </div>
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- ΙΣΤΟΡΙΚΟ ΚΑΤΑΓΡΑΦΩΝ -->
+    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-1"></i> Ιστορικό</h5>
+
+    <% if (logs.length === 0) { %>
+      <p class="text-muted text-center py-4">Δεν υπάρχουν καταγραφές ακόμα.</p>
+    <% } %>
+
+    <% logs.forEach(log => { %>
+      <div class="card p-3 mb-2">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <span class="badge bg-secondary mb-1">
+              <%= new Date(log.date).toLocaleDateString('el-GR', { day: '2-digit', month: '2-digit', year: 'numeric' }) %>
+            </span>
+            <h6 class="fw-bold m-0 text-dark">
+              <%= log.fuelType %>: <%= log.amount %> <%= log.unit %>
+            </h6>
+            <% if(log.totalCost > 0) { %>
+              <div class="text-success fw-bold small mt-1">
+                Κόστος: <%= log.totalCost.toFixed(2) %> € (<%= log.unitPrice %> €/<%= log.unit %>)
+              </div>
+            <% } %>
+            <% if(log.notes) { %>
+              <p class="small text-muted mb-0 mt-1"><i class="bi bi-chat-left-text me-1"></i><%= log.notes %></p>
+            <% } %>
+          </div>
+
+          <div class="d-flex gap-1">
+            <a href="/edit/<%= log._id %>" class="btn btn-outline-primary btn-sm rounded-circle">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form action="/delete/<%= log._id %>" method="POST" onsubmit="return confirm('Διαγραφή καταγραφής;');">
+              <button class="btn btn-outline-danger btn-sm rounded-circle"><i class="bi bi-trash"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+
+  </div>
+
+  <script>
+    document.getElementById('dateInput').valueAsDate = new Date();
+
+    const fuelUnits = {
+      'Πετρέλαιο': ['λίτρα'],
+      'Πέλλετ': ['σακιά (15kg)', 'κιλά'],
+      'Ξύλα': ['κιλά', 'm³'],
+      'Άλλο': ['μονάδες']
+    };
+
+    function updateUnits() {
+      const fuelSelect = document.getElementById('fuelSelect');
+      const unitSelect = document.getElementById('unitSelect');
+      const selectedFuel = fuelSelect.value;
+
+      unitSelect.innerHTML = '';
+      fuelUnits[selectedFuel].forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit;
+        option.textContent = unit;
+        unitSelect.appendChild(option);
+      });
+    }
+
+    updateUnits();
+  </script>
+</body>
+</html>
