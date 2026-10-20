@@ -50,7 +50,16 @@ app.get('/', async (req, res) => {
 });
 
 // 2. Προσθήκη Νέας Καταγραφής
-app.post('/add', async (req, res, next) => { //next
+app.post('/add', async (req, res) => {
+    try {
+        // Εδώ μέσα είναι ο κώδικας που σώζει τα δεδομένα στη MongoDB
+        // (π.χ. const log = new HeatingLog(req.body); await log.save(); res.redirect('/');)
+        
+    } catch (err) {
+        console.error("Σφάλμα:", err);
+        res.status(500).send('Σφάλμα αποθήκευσης: ' + err.message);
+    }
+});
   try {
     const { date, fuelType, amount, unit, unitPrice, notes } = req.body;
     
