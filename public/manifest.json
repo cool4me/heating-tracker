@@ -1,0 +1,15 @@
+{
+  "name": "Heating Tracker",
+  "short_name": "Θέρμανση",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e65100",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3067/3067444.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
