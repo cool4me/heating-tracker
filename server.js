@@ -77,8 +77,7 @@ app.post('/add', async (req, res) => {
   } catch (err) {
     res.status(400).send('Σφάλμα αποθήκευσης: ' + err.message);
   }
-});
-
+;
 // 3. Σελίδα Επεξεργασίας
 app.get('/edit/:id', async (req, res) => {
   try {
