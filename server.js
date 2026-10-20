@@ -50,14 +50,20 @@ app.get('/', async (req, res) => {
 });
 
 // 2. Προσθήκη Νέας Καταγραφής
-app.post('/add', async (req, res) => {
+app.post('/add', async (req, res) => { // <-- Πρόσεξε να υπάρχει το async εδώ!
     try {
-        // Εδώ μέσα είναι ο κώδικας που σώζει τα δεδομένα στη MongoDB
-        // (π.χ. const log = new HeatingLog(req.body); await log.save(); res.redirect('/');)
-        
+        const { amount, unit, unitPrice, notes } = req.body;
+        const newLog = new HeatingLog({
+            amount: parseFloat(amount),
+            unit,
+            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
+            notes
+        });
+        await newLog.save(); // Τώρα το await θα δουλέψει τέλεια
+        res.redirect('/');
     } catch (err) {
         console.error("Σφάλμα:", err);
-        res.status(500).send('Σφάλμα αποθήκευσης: ' + err.message);
+        res.status(400).send('Σφάλμα αποθήκευσης: ' + err.message);
     }
 });
   try {
