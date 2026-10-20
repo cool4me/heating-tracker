@@ -50,7 +50,7 @@ app.get('/', async (req, res) => {
 });
 
 // 2. Προσθήκη Νέας Καταγραφής
-app.post('/add', async (req, res) => {
+app.post('/add', async (req, res, next) => { //next
   try {
     const { date, fuelType, amount, unit, unitPrice, notes } = req.body;
     
