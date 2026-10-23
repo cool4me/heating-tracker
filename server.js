@@ -50,7 +50,7 @@ app.get('/', async (req, res) => {
 });
 
 // 2. Προσθήκη Νέας Καταγραφής
-app.post('/add', async (req, res) => { // <-- Πρόσεξε να υπάρχει το async εδώ!
+app.post('/add', async (req, res) => {
     try {
         const { amount, unit, unitPrice, notes } = req.body;
         const newLog = new HeatingLog({
@@ -59,7 +59,7 @@ app.post('/add', async (req, res) => { // <-- Πρόσεξε να υπάρχει
             unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
             notes
         });
-        await newLog.save(); // Τώρα το await θα δουλέψει τέλεια
+        await newLog.save();
         res.redirect('/');
     } catch (err) {
         console.error("Σφάλμα:", err);
