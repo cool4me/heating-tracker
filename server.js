@@ -26,12 +26,11 @@ app.get('/', async (req, res) => {
     try {
         const logs = await HeatingLog.find().sort({ date: -1 });
         
-        // Υπολογισμός συνολικού κόστους και ανά καύσιμο
         let totalCostAll = 0;
         const totalsByFuel = {};
         
         logs.forEach(log => {
-            const cost = log.totalCost || (log.amount * (log.unitPrice || 0));
+            const cost = log.totalCost || 0;
             totalCostAll += cost;
             
             if (!totalsByFuel[log.unit]) {
@@ -50,18 +49,43 @@ app.get('/', async (req, res) => {
 // 2. Προσθήκη νέας καταχώρησης (POST)
 app.post('/add', async (req, res) => {
     try {
-        const { amount, unit, unitPrice, notes } = req.body;
+        const { 
+            amount, unit, unitPrice, notes, 
+            vitaraGas, chainsawGas, chainOil, mixOil, accessoriesCost, accessoriesNote 
+        } = req.body;
+        
         const parsedAmount = parseFloat(amount) || 0;
-        const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
-        const totalCost = parsedAmount * parsedUnitPrice;
+        let totalCost = 0;
+
+        // Αν είναι ξύλα, το κόστος είναι το άθροισμα των εξόδων μεταφοράς/κοπής
+        if (unit && unit.toLowerCase().includes('ξύλ')) {
+            const vGas = parseFloat(vitaraGas) || 0;
+            const cGas = parseFloat(chainsawGas) || 0;
+            const cOil = parseFloat(chainOil) || 0;
+            const mOil = parseFloat(mixOil) || 0;
+            const accCost = parseFloat(accessoriesCost) || 0;
+            
+            totalCost = vGas + cGas + cOil + mOil + accCost;
+        } else {
+            // Για τα υπόλοιπα καύσιμα (π.χ. πετρέλαιο)
+            const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
+            totalCost = parsedAmount * parsedUnitPrice;
+        }
 
         const newLog = new HeatingLog({
             amount: parsedAmount,
             unit,
-            unitPrice: parsedUnitPrice,
+            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
             totalCost,
-            notes
+            notes,
+            vitaraGas: parseFloat(vitaraGas) || 0,
+            chainsawGas: parseFloat(chainsawGas) || 0,
+            chainOil: parseFloat(chainOil) || 0,
+            mixOil: parseFloat(mixOil) || 0,
+            accessoriesCost: parseFloat(accessoriesCost) || 0,
+            accessoriesNote: accessoriesNote || ''
         });
+
         await newLog.save();
         res.redirect('/');
     } catch (err) {
@@ -70,21 +94,56 @@ app.post('/add', async (req, res) => {
     }
 });
 
+// 3. Σελίδα Επεξεργασίας (GET)
+app.get('/edit/:id', async (req, res) => {
+    try {
+        const log = await HeatingLog.findById(req.params.id);
+        if (!log) return res.redirect('/');
+        res.render('edit', { log });
+    } catch (err) {
+        console.error(err);
+        res.redirect('/');
+    }
+});
+
 // 4. Ενημέρωση καταχώρησης (POST)
 app.post('/edit/:id', async (req, res) => {
     try {
-        const { amount, unit, unitPrice, notes } = req.body;
+        const { 
+            amount, unit, unitPrice, notes, 
+            vitaraGas, chainsawGas, chainOil, mixOil, accessoriesCost, accessoriesNote 
+        } = req.body;
+        
         const parsedAmount = parseFloat(amount) || 0;
-        const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
-        const totalCost = parsedAmount * parsedUnitPrice;
+        let totalCost = 0;
+
+        if (unit && unit.toLowerCase().includes('ξύλ')) {
+            const vGas = parseFloat(vitaraGas) || 0;
+            const cGas = parseFloat(chainsawGas) || 0;
+            const cOil = parseFloat(chainOil) || 0;
+            const mOil = parseFloat(mixOil) || 0;
+            const accCost = parseFloat(accessoriesCost) || 0;
+            
+            totalCost = vGas + cGas + cOil + mOil + accCost;
+        } else {
+            const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
+            totalCost = parsedAmount * parsedUnitPrice;
+        }
 
         await HeatingLog.findByIdAndUpdate(req.params.id, {
             amount: parsedAmount,
             unit,
-            unitPrice: parsedUnitPrice,
+            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
             totalCost,
-            notes
+            notes,
+            vitaraGas: parseFloat(vitaraGas) || 0,
+            chainsawGas: parseFloat(chainsawGas) || 0,
+            chainOil: parseFloat(chainOil) || 0,
+            mixOil: parseFloat(mixOil) || 0,
+            accessoriesCost: parseFloat(accessoriesCost) || 0,
+            accessoriesNote: accessoriesNote || ''
         });
+
         res.redirect('/');
     } catch (err) {
         console.error("Σφάλμα ενημέρωσης:", err);
