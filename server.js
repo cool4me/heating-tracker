@@ -36,10 +36,15 @@ app.get('/', async (req, res) => {
 app.post('/add', async (req, res) => {
     try {
         const { amount, unit, unitPrice, notes } = req.body;
+        const parsedAmount = parseFloat(amount) || 0;
+        const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
+        const totalCost = parsedAmount * parsedUnitPrice;
+
         const newLog = new HeatingLog({
-            amount: parseFloat(amount) || 0,
+            amount: parsedAmount,
             unit,
-            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
+            unitPrice: parsedUnitPrice,
+            totalCost,
             notes
         });
         await newLog.save();
@@ -50,26 +55,19 @@ app.post('/add', async (req, res) => {
     }
 });
 
-// 3. Σελίδα Επεξεργασίας (GET)
-app.get('/edit/:id', async (req, res) => {
-    try {
-        const log = await HeatingLog.findById(req.params.id);
-        if (!log) return res.redirect('/');
-        res.render('edit', { log });
-    } catch (err) {
-        console.error(err);
-        res.redirect('/');
-    }
-});
-
 // 4. Ενημέρωση καταχώρησης (POST)
 app.post('/edit/:id', async (req, res) => {
     try {
         const { amount, unit, unitPrice, notes } = req.body;
+        const parsedAmount = parseFloat(amount) || 0;
+        const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
+        const totalCost = parsedAmount * parsedUnitPrice;
+
         await HeatingLog.findByIdAndUpdate(req.params.id, {
-            amount: parseFloat(amount) || 0,
+            amount: parsedAmount,
             unit,
-            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
+            unitPrice: parsedUnitPrice,
+            totalCost,
             notes
         });
         res.redirect('/');
