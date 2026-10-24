@@ -21,11 +21,26 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // --- ROUTES ---
 
-// 1. Αρχική σελίδα (Εμφάνιση καταχωρήσεων)
+// 1. Αρχική σελίδα (Εμφάνιση καταχωρήσεων και υπολογισμοί)
 app.get('/', async (req, res) => {
     try {
         const logs = await HeatingLog.find().sort({ date: -1 });
-        res.render('index', { logs });
+        
+        // Υπολογισμός συνολικού κόστους και ανά καύσιμο
+        let totalCostAll = 0;
+        const totalsByFuel = {};
+        
+        logs.forEach(log => {
+            const cost = log.totalCost || (log.amount * (log.unitPrice || 0));
+            totalCostAll += cost;
+            
+            if (!totalsByFuel[log.unit]) {
+                totalsByFuel[log.unit] = 0;
+            }
+            totalsByFuel[log.unit] += cost;
+        });
+
+        res.render('index', { logs, totalCostAll, totalsByFuel });
     } catch (err) {
         console.error(err);
         res.status(500).send('Σφάλμα φόρτωσης δεδομένων');
