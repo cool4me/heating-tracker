@@ -38,7 +38,7 @@
         <% if (selectedYear && Object.keys(yearlyFuelBreakdown).length > 0) { %>
             <div class="card mb-4 p-3 shadow-sm border-success">
                 <h4 class="text-success mb-3">📊 Ανάλυση Εξόδων για το έτος <%= selectedYear %></h4>
-                <div class="row">
+                <div class="row mb-3">
                     <% Object.entries(yearlyFuelBreakdown).forEach(([fuelName, cost]) => { %>
                         <div class="col-md-4 mb-2">
                             <div class="p-3 bg-light rounded border">
@@ -48,6 +48,33 @@
                         </div>
                     <% }) %>
                 </div>
+
+                <% if (selectedYear && woodTotals.total > 0) { %>
+                    <hr>
+                    <h5 class="text-secondary mb-2">🪵 Αναλυτικά έξοδα Ξύλων για <%= selectedYear %>:</h5>
+                    <div class="row text-center">
+                        <div class="col">
+                            <span class="text-muted d-block small">Βενζίνη Vitara</span>
+                            <strong><%= woodTotals.gasVitara.toFixed(2) %> €</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-muted d-block small">Βενζ. Αλυσοπρ.</span>
+                            <strong><%= woodTotals.gasChainsaw.toFixed(2) %> €</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-muted d-block small">Λάδι Αλυσοπρ.</span>
+                            <strong><%= woodTotals.oilChainsaw.toFixed(2) %> €</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-muted d-block small">Λάδι Mix</span>
+                            <strong><%= woodTotals.oilMix.toFixed(2) %> €</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-muted d-block small">Παρελκόμενα</span>
+                            <strong><%= woodTotals.accessories.toFixed(2) %> €</strong>
+                        </div>
+                    </div>
+                <% } %>
             </div>
         <% } %>
 
@@ -66,38 +93,72 @@
         <!-- Φόρμα Νέας Καταχώρησης -->
         <div class="card mb-4 p-4 shadow-sm">
             <h3 class="mb-3">➕ Νέα Καταχώρηση</h3>
-            <form action="/add" method="POST" class="row g-3">
+            <form action="/add" method="POST" class="row g-3" id="addForm">
                 <div class="col-md-4">
                     <label class="form-label">Ημερομηνία</label>
                     <input type="date" name="date" class="form-control" required value="<%= new Date().toISOString().split('T')[0] %>">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Είδος Καυσίμου</label>
-                    <select name="unit" class="form-select">
+                    <select name="unit" class="form-select" id="unitSelect" onchange="toggleWoodFields()">
                         <option value="Πέλλετ">Πέλλετ</option>
-                        <option value="Ξύλα">Ξύλα</option>
+                        <option value="Ξύλα" selected>Ξύλα</option>
                         <option value="Πετρέλαιο">Πετρέλαιο</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+
+                <!-- Κλασικά πεδία (για Πέλλετ / Πετρέλαιο) -->
+                <div class="col-md-4 standard-fields" style="display:none;">
                     <label class="form-label">Ποσότητα (Kg / Λίτρα)</label>
-                    <input type="number" step="any" name="amount" class="form-control" placeholder="π.χ. 500">
+                    <input type="number" step="any" name="amount" class="form-control" value="0">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 standard-fields" style="display:none;">
                     <label class="form-label">Συνολικό Κόστος (€)</label>
-                    <input type="number" step="any" name="totalCost" class="form-control" placeholder="π.χ. 150">
+                    <input type="number" step="any" name="totalCost" class="form-control" value="0">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 standard-fields" style="display:none;">
                     <label class="form-label">Σημειώσεις</label>
                     <input type="text" name="notes" class="form-control" placeholder="Προαιρετικές σημειώσεις...">
                 </div>
+
+                <!-- Ειδικά πεδία για Ξύλα -->
+                <div class="col-12 wood-fields">
+                    <div class="row g-3 p-3 bg-white border rounded">
+                        <h5 class="text-success mb-2">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
+                        <div class="col-md-4">
+                            <label class="form-label">Όχημα (π.χ. Μπαγκαζιέρα)</label>
+                            <input type="text" name="vehicle" class="form-control" placeholder="π.χ. Μπαγκαζιέρα">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Βενζίνη Vitara (€)</label>
+                            <input type="number" step="any" name="gasVitara" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Βενζίνη Αλυσοπρίονου (€)</label>
+                            <input type="number" step="any" name="gasChainsaw" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Λάδι αλυσοπρίονου (€)</label>
+                            <input type="number" step="any" name="oilChainsaw" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Λάδι Mix (€)</label>
+                            <input type="number" step="any" name="oilMix" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Παρελκόμενα (€)</label>
+                            <input type="number" step="any" name="accessories" class="form-control" value="0">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Αποθήκευση</button>
                 </div>
             </form>
         </div>
 
-        <!-- Ιστορικό Καταχωρήσεων (Εμφανίζεται ΜΟΝΟ όταν επιλεγεί έτος ή καύσιμο) -->
+        <!-- Ιστορικό Καταχωρήσεων -->
         <% if (selectedFuel || selectedYear) { %>
             <div class="card p-4 shadow-sm">
                 <h3 class="mb-3">📜 Καταχωρήσεις Φίλτρου</h3>
@@ -106,10 +167,20 @@
                         <thead>
                             <tr>
                                 <th>Ημερομηνία</th>
-                                <th>Καύσιμο</th>
-                                <th>Ποσότητα</th>
-                                <th>Κόστος</th>
-                                <th>Λεπτομέρειες</th>
+                                <% if (selectedFuel === 'Ξύλα') { %>
+                                    <th>Όχημα</th>
+                                    <th>Βενζίνη Vitara</th>
+                                    <th>Βενζ. Αλυσοπρ.</th>
+                                    <th>Λάδι Αλυσοπρ.</th>
+                                    <th>Λάδι Mix</th>
+                                    <th>Παρελκόμενα</th>
+                                    <th>Σύνολο (€)</th>
+                                <% } else { %>
+                                    <th>Καύσιμο</th>
+                                    <th>Ποσότητα</th>
+                                    <th>Κόστος</th>
+                                    <th>Λεπτομέρειες</th>
+                                <% } %>
                                 <th>Ενέργειες</th>
                             </tr>
                         </thead>
@@ -118,10 +189,20 @@
                                 <% logs.forEach(log => { %>
                                     <tr>
                                         <td><%= new Date(log.date).toLocaleDateString('el-GR') %></td>
-                                        <td><strong><%= log.unit %></strong></td>
-                                        <td><%= log.amount %></td>
-                                        <td><%= log.totalCost ? log.totalCost.toFixed(2) + ' €' : '-' %></td>
-                                        <td><%= log.notes || '-' %></td>
+                                        <% if (selectedFuel === 'Ξύλα') { %>
+                                            <td><%= log.vehicle || '-' %></td>
+                                            <td><%= (log.gasVitara || 0).toFixed(2) %> €</td>
+                                            <td><%= (log.gasChainsaw || 0).toFixed(2) %> €</td>
+                                            <td><%= (log.oilChainsaw || 0).toFixed(2) %> €</td>
+                                            <td><%= (log.oilMix || 0).toFixed(2) %> €</td>
+                                            <td><%= (log.accessories || 0).toFixed(2) %> €</td>
+                                            <td><strong><%= (log.totalCost || 0).toFixed(2) %> €</strong></td>
+                                        <% } else { %>
+                                            <td><strong><%= log.unit %></strong></td>
+                                            <td><%= log.amount %></td>
+                                            <td><%= log.totalCost ? log.totalCost.toFixed(2) + ' €' : '-' %></td>
+                                            <td><%= log.notes || '-' %></td>
+                                        <% } %>
                                         <td>
                                             <a href="/edit/<%= log._id %>" class="btn btn-warning btn-sm">Επεξεργασία</a>
                                             <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
@@ -132,7 +213,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις για την επιλογή σας.</td>
+                                    <td colspan="<%= selectedFuel === 'Ξύλα' ? 9 : 6 %>" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις για την επιλογή σας.</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -141,5 +222,22 @@
             </div>
         <% } %>
     </div>
+
+    <script>
+        function toggleWoodFields() {
+            const unit = document.getElementById('unitSelect').value;
+            const woodFields = document.querySelector('.wood-fields');
+            const standardFields = document.querySelectorAll('.standard-fields');
+
+            if (unit === 'Ξύλα') {
+                woodFields.style.display = 'block';
+                standardFields.forEach(el => el.style.display = 'none');
+            } else {
+                woodFields.style.display = 'none';
+                standardFields.forEach(el => el.style.display = 'block');
+            }
+        }
+        toggleWoodFields();
+    </script>
 </body>
 </html>

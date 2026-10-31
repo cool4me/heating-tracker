@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light pb-5">
-    <div class="container mt-5" style="max-width: 600px;">
+    <div class="container mt-5" style="max-width: 700px;">
         <div class="card p-4 shadow-sm">
             <h2 class="mb-4 text-center">✏️ Επεξεργασία Καταχώρησης</h2>
             <form action="/edit/<%= log._id %>" method="POST" class="row g-3">
@@ -16,20 +16,54 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Είδος Καυσίμου</label>
-                    <input type="text" name="unit" class="form-control" required value="<%= log.unit %>">
+                    <input type="text" name="unit" class="form-control" required value="<%= log.unit %>" readonly>
                 </div>
-                <div class="col-12">
-                    <label class="form-label">Ποσότητα (Kg / Λίτρα)</label>
-                    <input type="number" step="any" name="amount" class="form-control" value="<%= log.amount %>">
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Συνολικό Κόστος (€)</label>
-                    <input type="number" step="any" name="totalCost" class="form-control" value="<%= log.totalCost %>">
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Σημειώσεις / Λεπτομέρειες</label>
-                    <input type="text" name="notes" class="form-control" value="<%= log.notes %>">
-                </div>
+
+                <% if (log.unit === 'Ξύλα') { %>
+                    <div class="col-12">
+                        <div class="row g-3 p-3 bg-light border rounded">
+                            <h5 class="text-success mb-2">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
+                            <div class="col-md-6">
+                                <label class="form-label">Όχημα</label>
+                                <input type="text" name="vehicle" class="form-control" value="<%= log.vehicle || '' %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Βενζίνη Vitara (€)</label>
+                                <input type="number" step="any" name="gasVitara" class="form-control" value="<%= log.gasVitara || 0 %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Βενζίνη Αλυσοπρίονου (€)</label>
+                                <input type="number" step="any" name="gasChainsaw" class="form-control" value="<%= log.gasChainsaw || 0 %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Λάδι αλυσοπρίονου (€)</label>
+                                <input type="number" step="any" name="oilChainsaw" class="form-control" value="<%= log.oilChainsaw || 0 %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Λάδι Mix (€)</label>
+                                <input type="number" step="any" name="oilMix" class="form-control" value="<%= log.oilMix || 0 %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Παρελκόμενα (€)</label>
+                                <input type="number" step="any" name="accessories" class="form-control" value="<%= log.accessories || 0 %>">
+                            </div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="col-md-6">
+                        <label class="form-label">Ποσότητα</label>
+                        <input type="number" step="any" name="amount" class="form-control" value="<%= log.amount || 0 %>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Συνολικό Κόστος (€)</label>
+                        <input type="number" step="any" name="totalCost" class="form-control" value="<%= log.totalCost || 0 %>">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Σημειώσεις</label>
+                        <input type="text" name="notes" class="form-control" value="<%= log.notes || '' %>">
+                    </div>
+                <% } %>
+
                 <div class="col-12 d-flex justify-content-between mt-4">
                     <a href="/" class="btn btn-secondary">Ακύρωση</a>
                     <button type="submit" class="btn btn-success">Αποθήκευση Αλλαγών</button>

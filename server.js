@@ -5,7 +5,6 @@ const HeatingLog = require('./models/HeatingLog');
 
 const app = express();
 
-// Σύνδεση στη MongoDB
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Σύνδεση στη MongoDB επιτυχής!'))
     .catch(err => console.error('Σφάλμα σύνδεσης στη MongoDB:', err));
@@ -14,7 +13,6 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Κεντρική Σελίδα (Το ιστορικό κρύβεται εκτός αν γίνει επιλογή έτους/καυσίμου)
 app.get('/', async (req, res) => {
     try {
         const selectedFuel = req.query.fuel;
@@ -39,8 +37,16 @@ app.get('/', async (req, res) => {
         
         let totalSpent = logs.reduce((sum, log) => sum + (log.totalCost || 0), 0);
 
-        // Ανάλυση εξόδων ανά καύσιμο για την επιλεγμένη χρονιά
         let yearlyFuelBreakdown = {};
+        let woodTotals = {
+            gasVitara: 0,
+            gasChainsaw: 0,
+            oilChainsaw: 0,
+            oilMix: 0,
+            accessories: 0,
+            total: 0
+        };
+
         if (selectedYear) {
             const yearStart = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
             const yearEnd = new Date(`${selectedYear}-12-31T23:59:59.999Z`);
@@ -52,6 +58,15 @@ app.get('/', async (req, res) => {
                     yearlyFuelBreakdown[baseUnit] = 0;
                 }
                 yearlyFuelBreakdown[baseUnit] += (log.totalCost || 0);
+
+                if (baseUnit === 'Ξύλα') {
+                    woodTotals.gasVitara += (log.gasVitara || 0);
+                    woodTotals.gasChainsaw += (log.gasChainsaw || 0);
+                    woodTotals.oilChainsaw += (log.oilChainsaw || 0);
+                    woodTotals.oilMix += (log.oilMix || 0);
+                    woodTotals.accessories += (log.accessories || 0);
+                    woodTotals.total += (log.totalCost || 0);
+                }
             });
         }
 
@@ -66,7 +81,8 @@ app.get('/', async (req, res) => {
             years, 
             selectedFuel, 
             selectedYear,
-            yearlyFuelBreakdown 
+            yearlyFuelBreakdown,
+            woodTotals
         });
     } catch (err) {
         console.error(err);
@@ -74,7 +90,6 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Φόρμα Επεξεργασίας (GET)
 app.get('/edit/:id', async (req, res) => {
     try {
         const log = await HeatingLog.findById(req.params.id);
@@ -88,16 +103,31 @@ app.get('/edit/:id', async (req, res) => {
     }
 });
 
-// Ενημέρωση Εγγραφής (POST)
 app.post('/edit/:id', async (req, res) => {
     try {
-        const { date, unit, amount, totalCost, notes } = req.body;
+        const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
+        
+        let finalCost = totalCost;
+        if (unit === 'Ξύλα') {
+            finalCost = (parseFloat(gasVitara) || 0) + 
+                        (parseFloat(gasChainsaw) || 0) + 
+                        (parseFloat(oilChainsaw) || 0) + 
+                        (parseFloat(oilMix) || 0) + 
+                        (parseFloat(accessories) || 0);
+        }
+
         await HeatingLog.findByIdAndUpdate(req.params.id, {
             date: date ? new Date(date) : new Date(),
             unit,
             amount: amount || 0,
-            totalCost: totalCost || 0,
-            notes
+            totalCost: finalCost || 0,
+            notes,
+            vehicle: vehicle || '',
+            gasVitara: parseFloat(gasVitara) || 0,
+            gasChainsaw: parseFloat(gasChainsaw) || 0,
+            oilChainsaw: parseFloat(oilChainsaw) || 0,
+            oilMix: parseFloat(oilMix) || 0,
+            accessories: parseFloat(accessories) || 0
         });
         res.redirect('/');
     } catch (err) {
@@ -106,13 +136,18 @@ app.post('/edit/:id', async (req, res) => {
     }
 });
 
-// Διαδρομή για αποθήκευση νέας καταχώρησης
 app.post('/add', async (req, res) => {
     try {
-        const { date, unit, amount, unitPrice, totalCost, notes } = req.body;
+        const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
         
         let calculatedCost = totalCost;
-        if ((!totalCost || totalCost == 0) && unitPrice && amount) {
+        if (unit === 'Ξύλα') {
+            calculatedCost = (parseFloat(gasVitara) || 0) + 
+                             (parseFloat(gasChainsaw) || 0) + 
+                             (parseFloat(oilChainsaw) || 0) + 
+                             (parseFloat(oilMix) || 0) + 
+                             (parseFloat(accessories) || 0);
+        } else if ((!totalCost || totalCost == 0) && unitPrice && amount) {
             calculatedCost = amount * unitPrice;
         }
 
@@ -122,7 +157,13 @@ app.post('/add', async (req, res) => {
             amount: amount || 0,
             unitPrice: unitPrice || 0,
             totalCost: calculatedCost || 0,
-            notes
+            notes,
+            vehicle: vehicle || '',
+            gasVitara: parseFloat(gasVitara) || 0,
+            gasChainsaw: parseFloat(gasChainsaw) || 0,
+            oilChainsaw: parseFloat(oilChainsaw) || 0,
+            oilMix: parseFloat(oilMix) || 0,
+            accessories: parseFloat(accessories) || 0
         });
 
         await newLog.save();
@@ -133,7 +174,6 @@ app.post('/add', async (req, res) => {
     }
 });
 
-// Διαδρομή διαγραφής
 app.post('/delete/:id', async (req, res) => {
     try {
         await HeatingLog.findByIdAndDelete(req.params.id);
