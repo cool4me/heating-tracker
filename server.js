@@ -59,7 +59,7 @@ app.get('/', async (req, res) => {
                 }
                 yearlyFuelBreakdown[baseUnit] += (log.totalCost || 0);
 
-                if (baseUnit === 'Ξύλα') {
+                if (baseUnit.includes('Ξύλα')) {
                     woodTotals.gasVitara += (log.gasVitara || 0);
                     woodTotals.gasChainsaw += (log.gasChainsaw || 0);
                     woodTotals.oilChainsaw += (log.oilChainsaw || 0);
@@ -108,7 +108,7 @@ app.post('/edit/:id', async (req, res) => {
         const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
         
         let finalCost = totalCost;
-        if (unit === 'Ξύλα') {
+        if (unit.includes('Ξύλα')) {
             finalCost = (parseFloat(gasVitara) || 0) + 
                         (parseFloat(gasChainsaw) || 0) + 
                         (parseFloat(oilChainsaw) || 0) + 
@@ -141,7 +141,7 @@ app.post('/add', async (req, res) => {
         const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
         
         let calculatedCost = totalCost;
-        if (unit === 'Ξύλα') {
+        if (unit.includes('Ξύλα')) {
             calculatedCost = (parseFloat(gasVitara) || 0) + 
                              (parseFloat(gasChainsaw) || 0) + 
                              (parseFloat(oilChainsaw) || 0) + 

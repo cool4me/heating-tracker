@@ -20,7 +20,7 @@
                     <input type="text" name="unit" class="form-control" required value="<%= log.unit %>" readonly>
                 </div>
 
-                <% if (log.unit === 'Ξύλα') { %>
+                <% if (log.unit && log.unit.includes('Ξύλα')) { %>
                     <div class="col-12">
                         <div class="row g-3 p-3 bg-light border rounded">
                             <h5 class="text-success mb-2 fs-6">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
