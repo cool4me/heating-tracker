@@ -2,115 +2,104 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Καταγραφή Θέρμανσης</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>Καταγραφή Καυσίμων Θέρμανσης</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light pb-5">
-    <div class="container mt-4" style="max-width: 800px;">
-        <h2 class="text-center mb-4 fw-bold text-primary">🔥 Καταγραφή Καυσίμων Θέρμανσης</h2>
+    <div class="container mt-4">
+        <h1 class="mb-4 text-center">🔥 Καταγραφή Καυσίμων Θέρμανσης</h1>
 
-        <!-- Συγκεντρωτικά Στοιχεία -->
-        <div class="row mb-4">
-            <div class="col-md-6 mb-3">
-                <div class="card shadow-sm border-0 bg-white p-3">
-                    <h6 class="text-muted fw-bold">Σύνολο Δαπάνης</h6>
-                    <h3 class="text-danger fw-bold mb-0"><%= typeof totalCostAll !== 'undefined' ? totalCostAll.toFixed(2) : '0.00' %> €</h3>
-                </div>
+        <!-- Κουμπιά Επιλογής Χρονιάς & Καυσίμου -->
+        <div class="card mb-4 p-3 shadow-sm">
+            <h5 class="mb-3">📅 Επιλέξτε Χρονιά:</h5>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="/?<%= selectedFuel ? 'fuel=' + selectedFuel : '' %>" class="btn <%= !selectedYear ? 'btn-secondary' : 'btn-outline-secondary' %> btn-sm">Όλα τα έτη</a>
+                <% years.forEach(y => { %>
+                    <a href="/?<%= selectedFuel ? 'fuel=' + selectedFuel + '&' : '' %>year=<%= y %>" 
+                       class="btn <%= selectedYear == y ? 'btn-success' : 'btn-outline-success' %> btn-sm">
+                        <%= y %>
+                    </a>
+                <% }) %>
             </div>
-            <div class="col-md-6 mb-3">
-                <div class="card shadow-sm border-0 bg-white p-3">
-                    <h6 class="text-muted fw-bold">Ανά Καύσιμο</h6>
-                    <% if (typeof totalsByFuel !== 'undefined' && Object.keys(totalsByFuel).length > 0) { %>
-                        <ul class="list-unstyled mb-0">
-                            <% Object.keys(totalsByFuel).forEach(fuel => { %>
-                                <li><strong><%= fuel %>:</strong> <%= totalsByFuel[fuel].toFixed(2) %> €</li>
-                            <% }) %>
-                        </ul>
-                    <% } else { %>
-                        <p class="text-muted mb-0">Δεν υπάρχουν δεδομένα</p>
-                    <% } %>
-                </div>
+
+            <h5 class="mb-3">🔥 Επιλέξτε Καύσιμο:</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/?<%= selectedYear ? 'year=' + selectedYear : '' %>" class="btn <%= !selectedFuel ? 'btn-dark' : 'btn-outline-dark' %> btn-sm">Όλα τα καύσιμα</a>
+                <% fuels.forEach(f => { %>
+                    <a href="/?fuel=<%= f %><%= selectedYear ? '&year=' + selectedYear : '' %>" 
+                       class="btn <%= selectedFuel === f ? 'btn-primary' : 'btn-outline-primary' %> btn-sm">
+                        <%= f %>
+                    </a>
+                <% }) %>
             </div>
         </div>
 
-        <!-- Φόρμα Καταχώρησης -->
-        <div class="card shadow-sm border-0 mb-4 p-4">
-            <h4 class="mb-3 text-secondary">Νέα Καταχώρηση</h4>
-            <form action="/add" method="POST">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Ημερομηνία</label>
-                        <input type="date" name="date" class="form-control" id="dateInput" required>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Είδος Καυσίμου</label>
-                        <select class="form-select" id="fuelSelect" name="unit" required>
-                            <option value="Πετρέλαιο">💧 Πετρέλαιο</option>
-                            <option value="Πέλλετ">🟢 Πέλλετ</option>
-                            <option value="Ξύλα">🪵 Ξύλα</option>
-                            <option value="Άλλο">⚡ Άλλο</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Ποσότητα</label>
-                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="π.χ. 500 ή 1" required>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Τιμή Μονάδας (€) <small class="text-muted">(για μη-ξύλα)</small></label>
-                        <input type="number" step="0.01" name="unitPrice" class="form-control" value="0" placeholder="π.χ. 1.25">
-                    </div>
-
-                    <!-- Αναλυτικά έξοδα ξύλων (Εμφανίζονται δυναμικά) -->
-                    <div id="woodExpensesDiv" class="col-12" style="display: none; background: #fff3e0; padding: 15px; border-radius: 8px; border: 1px solid #ffe0b2;">
-                        <h6 class="text-warning fw-bold mb-3">🛠️ Ανάλυση Εξόδων Ξύλων</h6>
-                        <div class="row g-2">
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Βενζίνη Vitara (€)</label>
-                                <input type="number" step="0.01" name="vitaraGas" class="form-control" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Βενζίνη Αλυσοπρίονου (€)</label>
-                                <input type="number" step="0.01" name="chainsawGas" class="form-control" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Λάδι αλυσίδας (€)</label>
-                                <input type="number" step="0.01" name="chainOil" class="form-control" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Λάδι mix (€)</label>
-                                <input type="number" step="0.01" name="mixOil" class="form-control" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Παρελκόμενα - Κόστος (€)</label>
-                                <input type="number" step="0.01" name="accessoriesCost" class="form-control" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Περιγραφή Παρελκόμενων</label>
-                                <input type="text" name="accessoriesNote" class="form-control" placeholder="π.χ. Αλλαγή αλυσίδας">
+        <!-- Ανάλυση Εξόδων ανά Θέρμανση για την Επιλεγμένη Χρονιά -->
+        <% if (selectedYear && Object.keys(yearlyFuelBreakdown).length > 0) { %>
+            <div class="card mb-4 p-3 shadow-sm border-success">
+                <h4 class="text-success mb-3">📊 Ανάλυση Εξόδων για το έτος <%= selectedYear %></h4>
+                <div class="row">
+                    <% Object.entries(yearlyFuelBreakdown).forEach(([fuelName, cost]) => { %>
+                        <div class="col-md-4 mb-2">
+                            <div class="p-3 bg-light rounded border">
+                                <h6 class="text-muted mb-1"><%= fuelName %></h6>
+                                <h4 class="text-dark fw-bold mb-0"><%= cost.toFixed(2) %> €</h4>
                             </div>
                         </div>
-                    </div>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
 
-                    <div class="col-12">
-                        <label class="form-label fw-bold">Σημειώσεις</label>
-                        <textarea name="notes" class="form-control" rows="2" placeholder="Προαιρετικές σημειώσεις..."></textarea>
+        <!-- Εμφάνιση Συνολικής Δαπάνης όταν επιλεγεί καύσιμο -->
+        <% if (selectedFuel) { %>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card bg-light p-3 border-primary shadow-sm">
+                        <h4>Σύνολο Δαπάνης για: <span class="text-primary"><%= selectedFuel %></span> <%= selectedYear ? '(' + selectedYear + ')' : '' %></h4>
+                        <h2 class="text-danger fw-bold"><%= totalSpent.toFixed(2) %> €</h2>
                     </div>
+                </div>
+            </div>
+        <% } %>
 
-                    <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-primary px-4 fw-bold">💾 Αποθήκευση</button>
-                    </div>
+        <!-- Φόρμα Νέας Καταχώρησης -->
+        <div class="card mb-4 p-4 shadow-sm">
+            <h3 class="mb-3">➕ Νέα Καταχώρηση</h3>
+            <form action="/add" method="POST" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Ημερομηνία</label>
+                    <input type="date" name="date" class="form-control" required value="<%= new Date().toISOString().split('T')[0] %>">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Είδος Καυσίμου</label>
+                    <select name="unit" class="form-select">
+                        <option value="Πέλλετ">Πέλλετ</option>
+                        <option value="Ξύλα">Ξύλα</option>
+                        <option value="Πετρέλαιο">Πετρέλαιο</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ποσότητα (Kg / Λίτρα)</label>
+                    <input type="number" step="any" name="amount" class="form-control" placeholder="π.χ. 500">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Συνολικό Κόστος (€)</label>
+                    <input type="number" step="any" name="totalCost" class="form-control" placeholder="π.χ. 150">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Σημειώσεις</label>
+                    <input type="text" name="notes" class="form-control" placeholder="Προαιρετικές σημειώσεις...">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Αποθήκευση</button>
                 </div>
             </form>
         </div>
 
-        <!-- Λίστα / Ιστορικό Καταχωρήσεων -->
-        <div class="card shadow-sm border-0 p-4">
-            <h4 class="mb-3 text-secondary">Ιστορικό Καταχωρήσεων</h4>
+        <!-- Ιστορικό Καταχωρήσεων -->
+        <div class="card p-4 shadow-sm">
+            <h3 class="mb-3">📜 Ιστορικό Καταχωρήσεων</h3>
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
                     <thead>
@@ -119,34 +108,29 @@
                             <th>Καύσιμο</th>
                             <th>Ποσότητα</th>
                             <th>Κόστος</th>
-                            <th>Λεπτομέρειες / Ανάλυση</th>
+                            <th>Λεπτομέρειες</th>
                             <th>Ενέργειες</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% if (typeof logs !== 'undefined' && logs.length > 0) { %>
+                        <% if (logs.length > 0) { %>
                             <% logs.forEach(log => { %>
                                 <tr>
                                     <td><%= new Date(log.date).toLocaleDateString('el-GR') %></td>
                                     <td><strong><%= log.unit %></strong></td>
                                     <td><%= log.amount %></td>
-                                    <td class="text-success fw-bold"><%= log.totalCost ? log.totalCost.toFixed(2) : '0.00' %> €</td>
+                                    <td><%= log.totalCost ? log.totalCost.toFixed(2) + ' €' : '-' %></td>
+                                    <td><%= log.notes || '-' %></td>
                                     <td>
-                                        <%= log.notes %>
-                                        <% if (log.unit && log.unit.includes('Ξύλα')) { %>
-                                            <br><small class="text-muted">
-                                                (Vitara: <%= log.vitaraGas %>€ | Αλυσοπρίονο: <%= log.chainsawGas %>€ | Λάδι αλυσ.: <%= log.chainOil %>€ | Mix: <%= log.mixOil %>€ | Παρελκ.: <%= log.accessoriesCost %>€ [<%= log.accessoriesNote %>])
-                                            </small>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <a href="/edit/<%= log._id %>" class="btn btn-sm btn-outline-primary">✏️ Επεξεργασία</a>
+                                        <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Είστε σίγουρος για τη διαγραφή;');">Διαγραφή</button>
+                                        </form>
                                     </td>
                                 </tr>
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="6" class="text-center text-muted">Δεν υπάρχουν καταχωρήσεις ακόμα.</td>
+                                <td colspan="6" class="text-center text-muted">Δεν υπάρχουν καταχωρήσεις για την επιλογή σας.</td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -154,27 +138,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Script για δυναμική εμφάνιση πεδίων ξύλων & αυτόματη ημερομηνία -->
-    <script>
-        // Αυτόματη συμπλήρωση σημερινής ημερομηνίας
-        document.getElementById('dateInput').valueAsDate = new Date();
-
-        const fuelSelect = document.getElementById('fuelSelect');
-        const woodDiv = document.getElementById('woodExpensesDiv');
-
-        function checkWood() {
-            if (fuelSelect && fuelSelect.value.includes('Ξύλα')) {
-                woodDiv.style.display = 'block';
-            } else {
-                woodDiv.style.display = 'none';
-            }
-        }
-
-        if (fuelSelect) {
-            fuelSelect.addEventListener('change', checkWood);
-            checkWood(); // Εκτέλεση κατά τη φόρτωση
-        }
-    </script>
 </body>
 </html>

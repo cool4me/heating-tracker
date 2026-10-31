@@ -1,158 +1,118 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
 const HeatingLog = require('./models/HeatingLog');
 
 const app = express();
 
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Σύνδεση με MongoDB Atlas
+// Σύνδεση στη MongoDB
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Σύνδεση στη MongoDB επιτυχής!'))
-    .catch(err => console.error('Σφάλμα σύνδεσης MongoDB:', err));
+    .catch(err => console.error('Σφάλμα σύνδεσης στη MongoDB:', err));
 
-// --- ROUTES ---
+app.set('view engine', 'ejs');
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
-// 1. Αρχική σελίδα (Εμφάνιση καταχωρήσεων και υπολογισμοί)
+// Κεντρική Σελίδα με Φίλτρα και Ετήσια Ανάλυση
 app.get('/', async (req, res) => {
     try {
-        const logs = await HeatingLog.find().sort({ date: -1 });
-        
-        let totalCostAll = 0;
-        const totalsByFuel = {};
-        
-        logs.forEach(log => {
-            const cost = log.totalCost || 0;
-            totalCostAll += cost;
-            
-            if (!totalsByFuel[log.unit]) {
-                totalsByFuel[log.unit] = 0;
-            }
-            totalsByFuel[log.unit] += cost;
-        });
+        const selectedFuel = req.query.fuel;
+        const selectedYear = req.query.year;
 
-        res.render('index', { logs, totalCostAll, totalsByFuel });
+        let filter = {};
+        
+        // Φιλτράρισμα ανά καύσιμο
+        if (selectedFuel) {
+            filter.unit = new RegExp(selectedFuel, 'i');
+        }
+
+        // Φιλτράρισμα ανά χρονιά
+        if (selectedYear) {
+            const start = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
+            const end = new Date(`${selectedYear}-12-31T23:59:59.999Z`);
+            filter.date = { $gte: start, $lte: end };
+        }
+
+        // Ανάκτηση εγγραφών με βάση τα φίλτρα
+        const logs = await HeatingLog.find(filter).sort({ date: -1 });
+        let totalSpent = logs.reduce((sum, log) => sum + (log.totalCost || 0), 0);
+
+        // Υπολογισμός ανάλυσης εξόδων ανά καύσιμο για την επιλεγμένη χρονιά
+        let yearlyFuelBreakdown = {};
+        if (selectedYear) {
+            const yearStart = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
+            const yearEnd = new Date(`${selectedYear}-12-31T23:59:59.999Z`);
+            const yearLogs = await HeatingLog.find({ date: { $gte: yearStart, $lte: yearEnd } });
+            
+            yearLogs.forEach(log => {
+                const baseUnit = log.unit.replace(' (Αγορά)', '').trim();
+                if (!yearlyFuelBreakdown[baseUnit]) {
+                    yearlyFuelBreakdown[baseUnit] = 0;
+                }
+                yearlyFuelBreakdown[baseUnit] += (log.totalCost || 0);
+            });
+        }
+
+        // Λίστα μοναδικών καυσίμων και ετών για τα κουμπιά
+        const allLogs = await HeatingLog.find({});
+        const fuels = [...new Set(allLogs.map(l => l.unit.replace(' (Αγορά)', '').trim()))];
+        const years = [...new Set(allLogs.map(l => new Date(l.date).getFullYear()))].filter(y => !isNaN(y)).sort((a, b) => b - a);
+
+        res.render('index', { 
+            logs, 
+            totalSpent, 
+            fuels, 
+            years, 
+            selectedFuel, 
+            selectedYear,
+            yearlyFuelBreakdown 
+        });
     } catch (err) {
         console.error(err);
-        res.status(500).send('Σφάλμα φόρτωσης δεδομένων');
+        res.status(500).send("Server Error");
     }
 });
 
-// 2. Προσθήκη νέας καταχώρησης (POST)
+// Διαδρομή για αποθήκευση νέας καταχώρησης
 app.post('/add', async (req, res) => {
     try {
-        const { 
-            amount, unit, unitPrice, notes, 
-            vitaraGas, chainsawGas, chainOil, mixOil, accessoriesCost, accessoriesNote 
-        } = req.body;
+        const { date, unit, amount, unitPrice, totalCost, notes } = req.body;
         
-        const parsedAmount = parseFloat(amount) || 0;
-        let totalCost = 0;
-
-        // Αν είναι ξύλα, το κόστος είναι το άθροισμα των εξόδων μεταφοράς/κοπής
-        if (unit && unit.toLowerCase().includes('ξύλ')) {
-            const vGas = parseFloat(vitaraGas) || 0;
-            const cGas = parseFloat(chainsawGas) || 0;
-            const cOil = parseFloat(chainOil) || 0;
-            const mOil = parseFloat(mixOil) || 0;
-            const accCost = parseFloat(accessoriesCost) || 0;
-            
-            totalCost = vGas + cGas + cOil + mOil + accCost;
-        } else {
-            // Για τα υπόλοιπα καύσιμα (π.χ. πετρέλαιο)
-            const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
-            totalCost = parsedAmount * parsedUnitPrice;
+        let calculatedCost = totalCost;
+        if ((!totalCost || totalCost == 0) && unitPrice && amount) {
+            calculatedCost = amount * unitPrice;
         }
 
         const newLog = new HeatingLog({
-            amount: parsedAmount,
+            date: date ? new Date(date) : new Date(),
             unit,
-            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
-            totalCost,
-            notes,
-            vitaraGas: parseFloat(vitaraGas) || 0,
-            chainsawGas: parseFloat(chainsawGas) || 0,
-            chainOil: parseFloat(chainOil) || 0,
-            mixOil: parseFloat(mixOil) || 0,
-            accessoriesCost: parseFloat(accessoriesCost) || 0,
-            accessoriesNote: accessoriesNote || ''
+            amount: amount || 0,
+            unitPrice: unitPrice || 0,
+            totalCost: calculatedCost || 0,
+            notes
         });
 
         await newLog.save();
         res.redirect('/');
     } catch (err) {
-        console.error("Σφάλμα αποθήκευσης:", err);
-        res.status(400).send('Σφάλμα αποθήκευσης: ' + err.message);
+        console.error(err);
+        res.status(500).send("Server Error during add");
     }
 });
 
-// 3. Σελίδα Επεξεργασίας (GET)
-app.get('/edit/:id', async (req, res) => {
+// Διαδρομή διαγραφής
+app.post('/delete/:id', async (req, res) => {
     try {
-        const log = await HeatingLog.findById(req.params.id);
-        if (!log) return res.redirect('/');
-        res.render('edit', { log });
+        await HeatingLog.findByIdAndDelete(req.params.id);
+        res.redirect('/');
     } catch (err) {
         console.error(err);
-        res.redirect('/');
+        res.status(500).send("Server Error during delete");
     }
 });
 
-// 4. Ενημέρωση καταχώρησης (POST)
-app.post('/edit/:id', async (req, res) => {
-    try {
-        const { 
-            amount, unit, unitPrice, notes, 
-            vitaraGas, chainsawGas, chainOil, mixOil, accessoriesCost, accessoriesNote 
-        } = req.body;
-        
-        const parsedAmount = parseFloat(amount) || 0;
-        let totalCost = 0;
-
-        if (unit && unit.toLowerCase().includes('ξύλ')) {
-            const vGas = parseFloat(vitaraGas) || 0;
-            const cGas = parseFloat(chainsawGas) || 0;
-            const cOil = parseFloat(chainOil) || 0;
-            const mOil = parseFloat(mixOil) || 0;
-            const accCost = parseFloat(accessoriesCost) || 0;
-            
-            totalCost = vGas + cGas + cOil + mOil + accCost;
-        } else {
-            const parsedUnitPrice = unitPrice ? parseFloat(unitPrice) : 0;
-            totalCost = parsedAmount * parsedUnitPrice;
-        }
-
-        await HeatingLog.findByIdAndUpdate(req.params.id, {
-            amount: parsedAmount,
-            unit,
-            unitPrice: unitPrice ? parseFloat(unitPrice) : 0,
-            totalCost,
-            notes,
-            vitaraGas: parseFloat(vitaraGas) || 0,
-            chainsawGas: parseFloat(chainsawGas) || 0,
-            chainOil: parseFloat(chainOil) || 0,
-            mixOil: parseFloat(mixOil) || 0,
-            accessoriesCost: parseFloat(accessoriesCost) || 0,
-            accessoriesNote: accessoriesNote || ''
-        });
-
-        res.redirect('/');
-    } catch (err) {
-        console.error("Σφάλμα ενημέρωσης:", err);
-        res.status(400).send('Σφάλμα ενημέρωσης: ' + err.message);
-    }
-});
-
-// Εκκίνηση Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Ο server ξεκίνησε στη θύρα ${PORT}`);
+    console.log(`Ο Server τρέχει στη θύρα ${PORT}`);
 });
