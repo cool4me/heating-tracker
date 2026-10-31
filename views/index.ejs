@@ -2,16 +2,17 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Καταγραφή Καυσίμων Θέρμανσης</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light pb-5">
     <div class="container mt-4">
-        <h1 class="mb-4 text-center">🔥 Καταγραφή Καυσίμων Θέρμανσης</h1>
+        <h1 class="mb-4 text-center fs-3">🔥 Καταγραφή Καυσίμων Θέρμανσης</h1>
 
         <!-- Κουμπιά Επιλογής Χρονιάς & Καυσίμου -->
         <div class="card mb-4 p-3 shadow-sm">
-            <h5 class="mb-3">📅 Επιλέξτε Χρονιά:</h5>
+            <h5 class="mb-3 fs-6">📅 Επιλέξτε Χρονιά:</h5>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <a href="/?<%= selectedFuel ? 'fuel=' + selectedFuel : '' %>" class="btn <%= !selectedYear ? 'btn-secondary' : 'btn-outline-secondary' %> btn-sm">Όλα τα έτη</a>
                 <% years.forEach(y => { %>
@@ -22,7 +23,7 @@
                 <% }) %>
             </div>
 
-            <h5 class="mb-3">🔥 Επιλέξτε Καύσιμο:</h5>
+            <h5 class="mb-3 fs-6">🔥 Επιλέξτε Καύσιμο:</h5>
             <div class="d-flex flex-wrap gap-2">
                 <a href="/?<%= selectedYear ? 'year=' + selectedYear : '' %>" class="btn <%= !selectedFuel ? 'btn-dark' : 'btn-outline-dark' %> btn-sm">Όλα τα καύσιμα</a>
                 <% fuels.forEach(f => { %>
@@ -37,7 +38,7 @@
         <!-- Ανάλυση Εξόδων ανά Θέρμανση για την Επιλεγμένη Χρονιά -->
         <% if (selectedYear && Object.keys(yearlyFuelBreakdown).length > 0) { %>
             <div class="card mb-4 p-3 shadow-sm border-success">
-                <h4 class="text-success mb-3">📊 Ανάλυση Εξόδων για το έτος <%= selectedYear %></h4>
+                <h4 class="text-success mb-3 fs-5">📊 Ανάλυση Εξόδων για το έτος <%= selectedYear %></h4>
                 <div class="row mb-3">
                     <% Object.entries(yearlyFuelBreakdown).forEach(([fuelName, cost]) => { %>
                         <div class="col-md-4 mb-2">
@@ -51,25 +52,25 @@
 
                 <% if (selectedYear && woodTotals.total > 0) { %>
                     <hr>
-                    <h5 class="text-secondary mb-2">🪵 Αναλυτικά έξοδα Ξύλων για <%= selectedYear %>:</h5>
-                    <div class="row text-center">
-                        <div class="col">
+                    <h5 class="text-secondary mb-2 fs-6">🪵 Αναλυτικά έξοδα Ξύλων για <%= selectedYear %>:</h5>
+                    <div class="row text-center g-2">
+                        <div class="col-6 col-md">
                             <span class="text-muted d-block small">Βενζίνη Vitara</span>
                             <strong><%= woodTotals.gasVitara.toFixed(2) %> €</strong>
                         </div>
-                        <div class="col">
+                        <div class="col-6 col-md">
                             <span class="text-muted d-block small">Βενζ. Αλυσοπρ.</span>
                             <strong><%= woodTotals.gasChainsaw.toFixed(2) %> €</strong>
                         </div>
-                        <div class="col">
+                        <div class="col-6 col-md">
                             <span class="text-muted d-block small">Λάδι Αλυσοπρ.</span>
                             <strong><%= woodTotals.oilChainsaw.toFixed(2) %> €</strong>
                         </div>
-                        <div class="col">
+                        <div class="col-6 col-md">
                             <span class="text-muted d-block small">Λάδι Mix</span>
                             <strong><%= woodTotals.oilMix.toFixed(2) %> €</strong>
                         </div>
-                        <div class="col">
+                        <div class="col-6 col-md">
                             <span class="text-muted d-block small">Παρελκόμενα</span>
                             <strong><%= woodTotals.accessories.toFixed(2) %> €</strong>
                         </div>
@@ -92,7 +93,7 @@
 
         <!-- Φόρμα Νέας Καταχώρησης -->
         <div class="card mb-4 p-4 shadow-sm">
-            <h3 class="mb-3">➕ Νέα Καταχώρηση</h3>
+            <h3 class="mb-3 fs-5">➕ Νέα Καταχώρηση</h3>
             <form action="/add" method="POST" class="row g-3" id="addForm">
                 <div class="col-md-4">
                     <label class="form-label">Ημερομηνία</label>
@@ -124,7 +125,7 @@
                 <!-- Ειδικά πεδία για Ξύλα -->
                 <div class="col-12 wood-fields">
                     <div class="row g-3 p-3 bg-white border rounded">
-                        <h5 class="text-success mb-2">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
+                        <h5 class="text-success mb-2 fs-6">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
                         <div class="col-md-4">
                             <label class="form-label">Όχημα (π.χ. Μπαγκαζιέρα)</label>
                             <input type="text" name="vehicle" class="form-control" placeholder="π.χ. Μπαγκαζιέρα">
@@ -161,20 +162,20 @@
         <!-- Ιστορικό Καταχωρήσεων -->
         <% if (selectedFuel || selectedYear) { %>
             <div class="card p-4 shadow-sm">
-                <h3 class="mb-3">📜 Καταχωρήσεις Φίλτρου</h3>
+                <h3 class="mb-3 fs-5">📜 Καταχωρήσεις Φίλτρου</h3>
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle">
+                    <table class="table table-striped align-middle fs-6">
                         <thead>
                             <tr>
                                 <th>Ημερομηνία</th>
                                 <% if (selectedFuel === 'Ξύλα') { %>
                                     <th>Όχημα</th>
-                                    <th>Βενζίνη Vitara</th>
+                                    <th>Βενζ. Vitara</th>
                                     <th>Βενζ. Αλυσοπρ.</th>
                                     <th>Λάδι Αλυσοπρ.</th>
                                     <th>Λάδι Mix</th>
                                     <th>Παρελκόμενα</th>
-                                    <th>Σύνολο (€)</th>
+                                    <th>Σύνολο</th>
                                 <% } else { %>
                                     <th>Καύσιμο</th>
                                     <th>Ποσότητα</th>
@@ -204,16 +205,18 @@
                                             <td><%= log.notes || '-' %></td>
                                         <% } %>
                                         <td>
-                                            <a href="/edit/<%= log._id %>" class="btn btn-warning btn-sm">Επεξεργασία</a>
-                                            <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
-                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Είστε σίγουρος για τη διαγραφή;');">Διαγραφή</button>
-                                            </form>
+                                            <div class="d-flex gap-1">
+                                                <a href="/edit/<%= log._id %>" class="btn btn-warning btn-sm">Επεξ.</a>
+                                                <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
+                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Είστε σίγουρος;');">Διαγ.</button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="<%= selectedFuel === 'Ξύλα' ? 9 : 6 %>" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις για την επιλογή σας.</td>
+                                    <td colspan="<%= selectedFuel === 'Ξύλα' ? 9 : 6 %>" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις.</td>
                                 </tr>
                             <% } %>
                         </tbody>
