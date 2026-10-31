@@ -14,7 +14,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Κεντρική Σελίδα με Φίλτρα και Ετήσια Ανάλυση
+// Κεντρική Σελίδα (Το ιστορικό κρύβεται εκτός αν γίνει επιλογή έτους/καυσίμου)
 app.get('/', async (req, res) => {
     try {
         const selectedFuel = req.query.fuel;
@@ -22,23 +22,24 @@ app.get('/', async (req, res) => {
 
         let filter = {};
         
-        // Φιλτράρισμα ανά καύσιμο
         if (selectedFuel) {
             filter.unit = new RegExp(selectedFuel, 'i');
         }
 
-        // Φιλτράρισμα ανά χρονιά
         if (selectedYear) {
             const start = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
             const end = new Date(`${selectedYear}-12-31T23:59:59.999Z`);
             filter.date = { $gte: start, $lte: end };
         }
 
-        // Ανάκτηση εγγραφών με βάση τα φίλτρα
-        const logs = await HeatingLog.find(filter).sort({ date: -1 });
+        let logs = [];
+        if (selectedFuel || selectedYear) {
+            logs = await HeatingLog.find(filter).sort({ date: -1 });
+        }
+        
         let totalSpent = logs.reduce((sum, log) => sum + (log.totalCost || 0), 0);
 
-        // Υπολογισμός ανάλυσης εξόδων ανά καύσιμο για την επιλεγμένη χρονιά
+        // Ανάλυση εξόδων ανά καύσιμο για την επιλεγμένη χρονιά
         let yearlyFuelBreakdown = {};
         if (selectedYear) {
             const yearStart = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
@@ -54,7 +55,6 @@ app.get('/', async (req, res) => {
             });
         }
 
-        // Λίστα μοναδικών καυσίμων και ετών για τα κουμπιά
         const allLogs = await HeatingLog.find({});
         const fuels = [...new Set(allLogs.map(l => l.unit.replace(' (Αγορά)', '').trim()))];
         const years = [...new Set(allLogs.map(l => new Date(l.date).getFullYear()))].filter(y => !isNaN(y)).sort((a, b) => b - a);
@@ -71,6 +71,38 @@ app.get('/', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");
+    }
+});
+
+// Φόρμα Επεξεργασίας (GET)
+app.get('/edit/:id', async (req, res) => {
+    try {
+        const log = await HeatingLog.findById(req.params.id);
+        if (!log) {
+            return res.status(404).send("Η εγγραφή δεν βρέθηκε.");
+        }
+        res.render('edit', { log });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
+
+// Ενημέρωση Εγγραφής (POST)
+app.post('/edit/:id', async (req, res) => {
+    try {
+        const { date, unit, amount, totalCost, notes } = req.body;
+        await HeatingLog.findByIdAndUpdate(req.params.id, {
+            date: date ? new Date(date) : new Date(),
+            unit,
+            amount: amount || 0,
+            totalCost: totalCost || 0,
+            notes
+        });
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error during update");
     }
 });
 

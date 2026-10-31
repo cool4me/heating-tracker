@@ -97,46 +97,49 @@
             </form>
         </div>
 
-        <!-- Ιστορικό Καταχωρήσεων -->
-        <div class="card p-4 shadow-sm">
-            <h3 class="mb-3">📜 Ιστορικό Καταχωρήσεων</h3>
-            <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
-                        <tr>
-                            <th>Ημερομηνία</th>
-                            <th>Καύσιμο</th>
-                            <th>Ποσότητα</th>
-                            <th>Κόστος</th>
-                            <th>Λεπτομέρειες</th>
-                            <th>Ενέργειες</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (logs.length > 0) { %>
-                            <% logs.forEach(log => { %>
-                                <tr>
-                                    <td><%= new Date(log.date).toLocaleDateString('el-GR') %></td>
-                                    <td><strong><%= log.unit %></strong></td>
-                                    <td><%= log.amount %></td>
-                                    <td><%= log.totalCost ? log.totalCost.toFixed(2) + ' €' : '-' %></td>
-                                    <td><%= log.notes || '-' %></td>
-                                    <td>
-                                        <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Είστε σίγουρος για τη διαγραφή;');">Διαγραφή</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        <% } else { %>
+        <!-- Ιστορικό Καταχωρήσεων (Εμφανίζεται ΜΟΝΟ όταν επιλεγεί έτος ή καύσιμο) -->
+        <% if (selectedFuel || selectedYear) { %>
+            <div class="card p-4 shadow-sm">
+                <h3 class="mb-3">📜 Καταχωρήσεις Φίλτρου</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
                             <tr>
-                                <td colspan="6" class="text-center text-muted">Δεν υπάρχουν καταχωρήσεις για την επιλογή σας.</td>
+                                <th>Ημερομηνία</th>
+                                <th>Καύσιμο</th>
+                                <th>Ποσότητα</th>
+                                <th>Κόστος</th>
+                                <th>Λεπτομέρειες</th>
+                                <th>Ενέργειες</th>
                             </tr>
-                        <% } %>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <% if (logs.length > 0) { %>
+                                <% logs.forEach(log => { %>
+                                    <tr>
+                                        <td><%= new Date(log.date).toLocaleDateString('el-GR') %></td>
+                                        <td><strong><%= log.unit %></strong></td>
+                                        <td><%= log.amount %></td>
+                                        <td><%= log.totalCost ? log.totalCost.toFixed(2) + ' €' : '-' %></td>
+                                        <td><%= log.notes || '-' %></td>
+                                        <td>
+                                            <a href="/edit/<%= log._id %>" class="btn btn-warning btn-sm">Επεξεργασία</a>
+                                            <form action="/delete/<%= log._id %>" method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Είστε σίγουρος για τη διαγραφή;');">Διαγραφή</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις για την επιλογή σας.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        <% } %>
     </div>
 </body>
 </html>
