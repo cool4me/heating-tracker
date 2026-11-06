@@ -95,7 +95,7 @@ app.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server Error");
+        res.status(500).send("Server Error: " + err.message);
     }
 });
 
@@ -108,7 +108,7 @@ app.get('/edit/:id', async (req, res) => {
         res.render('edit', { log });
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server Error");
+        res.status(500).send("Server Error: " + err.message);
     }
 });
 
@@ -128,11 +128,13 @@ app.post('/edit/:id', async (req, res) => {
             finalCost = 0;
         }
 
+        const parsedDate = date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date();
+
         await HeatingLog.findByIdAndUpdate(req.params.id, {
-            date: date ? new Date(date) : new Date(),
+            date: parsedDate,
             unit: unitStr,
             amount: parseFloat(amount) || 0,
-            totalCost: finalCost || 0,
+            totalCost: parseFloat(finalCost) || 0,
             notes: notes || '',
             vehicle: vehicle || '',
             gasVitara: parseFloat(gasVitara) || 0,
@@ -144,8 +146,8 @@ app.post('/edit/:id', async (req, res) => {
         });
         res.redirect('/');
     } catch (err) {
-        console.error(err);
-        res.status(500).send("Server Error during update");
+        console.error("Error in /edit:", err);
+        res.status(500).send("Server Error during update: " + err.message);
     }
 });
 
@@ -169,8 +171,10 @@ app.post('/add', async (req, res) => {
             calculatedCost = amount * unitPrice;
         }
 
+        const parsedDate = date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date();
+
         const newLog = new HeatingLog({
-            date: date ? new Date(date) : new Date(),
+            date: parsedDate,
             unit: unitStr,
             amount: parseFloat(finalAmount) || 0,
             unitPrice: parseFloat(unitPrice) || 0,
@@ -189,7 +193,7 @@ app.post('/add', async (req, res) => {
         res.redirect('/');
     } catch (err) {
         console.error("Error in /add:", err);
-        res.status(500).send("Server Error during add");
+        res.status(500).send("Server Error during add: " + err.message);
     }
 });
 
@@ -199,7 +203,7 @@ app.post('/delete/:id', async (req, res) => {
         res.redirect('/');
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server Error during delete");
+        res.status(500).send("Server Error: " + err.message);
     }
 });
 
