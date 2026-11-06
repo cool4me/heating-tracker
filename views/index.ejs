@@ -134,13 +134,17 @@
                 <div class="col-12 consumption-fields" style="display:none;">
                     <div class="row g-3 p-3 bg-white border rounded">
                         <h5 class="text-danger mb-2 fs-6">🔥 Καταγραφή Κατανάλωσης / Γεμίσματος Κλούβας</h5>
-                        <div class="col-md-6">
-                            <label class="form-label">Ποσότητα / Κλούβες (π.χ. 1, 2...)</label>
-                            <input type="number" step="any" name="amount" class="form-control" value="1" placeholder="π.χ. 1 κλούβα">
+                        <div class="col-md-4">
+                            <label class="form-label">Ποσότητα / Κλούβες</label>
+                            <input type="number" step="any" name="amount" class="form-control" value="1" placeholder="π.χ. 1">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label">Κάθε πότε τη γεμίζεις;</label>
+                            <input type="text" name="fillFrequency" class="form-control" placeholder="π.χ. Ανά 2 μέρες">
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label">Σημειώσεις</label>
-                            <input type="text" name="notes" class="form-control" placeholder="π.χ. Γέμισμα κλούβας">
+                            <input type="text" name="notes" class="form-control" placeholder="Προαιρετικές σημειώσεις...">
                         </div>
                     </div>
                 </div>
@@ -202,6 +206,7 @@
                                 <% } else if (selectedFuel && selectedFuel.includes('Ξύλα (Κατανάλωση)')) { %>
                                     <th>Κατηγορία</th>
                                     <th>Ποσότητα / Κλούβες</th>
+                                    <th>Συχνότητα (Κάθε πότε)</th>
                                     <th>Σημειώσεις</th>
                                 <% } else { %>
                                     <th>Καύσιμο</th>
@@ -228,6 +233,7 @@
                                         <% } else if (log.unit.includes('Ξύλα (Κατανάλωση)')) { %>
                                             <td><strong><%= log.unit %></strong></td>
                                             <td><%= log.amount %> κλούβα/ες</td>
+                                            <td><%= log.fillFrequency || '-' %></td>
                                             <td><%= log.notes || '-' %></td>
                                         <% } else { %>
                                             <td><strong><%= log.unit %></strong></td>

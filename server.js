@@ -36,7 +36,6 @@ app.get('/', async (req, res) => {
         }
         
         let totalSpent = logs.reduce((sum, log) => {
-            // Υπολογίζουμε συνολικό κόστος μόνο για έξοδα (όχι για κατανάλωση ξύλων)
             if (log.unit && log.unit.includes('Κατανάλωση')) return sum;
             return sum + (log.totalCost || 0);
         }, 0);
@@ -115,7 +114,7 @@ app.get('/edit/:id', async (req, res) => {
 
 app.post('/edit/:id', async (req, res) => {
     try {
-        const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
+        const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
         
         let finalCost = totalCost;
         if (unit.includes('Ξύλα (Έξοδα)')) {
@@ -125,7 +124,7 @@ app.post('/edit/:id', async (req, res) => {
                         (parseFloat(oilMix) || 0) + 
                         (parseFloat(accessories) || 0);
         } else if (unit.includes('Ξύλα (Κατανάλωση)')) {
-            finalCost = 0; // Η κατανάλωση δεν έχει κόστος αγοράς, μετράει ποσότητα/κλούβα
+            finalCost = 0;
         }
 
         await HeatingLog.findByIdAndUpdate(req.params.id, {
@@ -139,7 +138,8 @@ app.post('/edit/:id', async (req, res) => {
             gasChainsaw: parseFloat(gasChainsaw) || 0,
             oilChainsaw: parseFloat(oilChainsaw) || 0,
             oilMix: parseFloat(oilMix) || 0,
-            accessories: parseFloat(accessories) || 0
+            accessories: parseFloat(accessories) || 0,
+            fillFrequency: fillFrequency || ''
         });
         res.redirect('/');
     } catch (err) {
@@ -150,7 +150,7 @@ app.post('/edit/:id', async (req, res) => {
 
 app.post('/add', async (req, res) => {
     try {
-        const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
+        const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
         
         let calculatedCost = totalCost;
         let finalAmount = amount || 0;
@@ -179,7 +179,8 @@ app.post('/add', async (req, res) => {
             gasChainsaw: parseFloat(gasChainsaw) || 0,
             oilChainsaw: parseFloat(oilChainsaw) || 0,
             oilMix: parseFloat(oilMix) || 0,
-            accessories: parseFloat(accessories) || 0
+            accessories: parseFloat(accessories) || 0,
+            fillFrequency: fillFrequency || ''
         });
 
         await newLog.save();

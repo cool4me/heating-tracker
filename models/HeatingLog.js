@@ -8,13 +8,16 @@ const heatingLogSchema = new mongoose.Schema({
     totalCost: { type: Number, default: 0 },
     notes: { type: String, default: '' },
     
-    // Ειδικά πεδία για τα Ξύλα
+    // Ειδικά πεδία για τα Ξύλα (Έξοδα)
     vehicle: { type: String, default: '' },
     gasVitara: { type: Number, default: 0 },
     gasChainsaw: { type: Number, default: 0 },
     oilChainsaw: { type: Number, default: 0 },
     oilMix: { type: Number, default: 0 },
-    accessories: { type: Number, default: 0 }
+    accessories: { type: Number, default: 0 },
+
+    // Ειδικό πεδίο για Ξύλα (Κατανάλωση)
+    fillFrequency: { type: String, default: '' }
 });
 
 module.exports = mongoose.model('HeatingLog', heatingLogSchema);

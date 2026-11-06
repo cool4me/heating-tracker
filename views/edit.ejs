@@ -56,6 +56,10 @@
                         <input type="number" step="any" name="amount" class="form-control" value="<%= log.amount || 0 %>">
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Κάθε πότε τη γεμίζεις;</label>
+                        <input type="text" name="fillFrequency" class="form-control" value="<%= log.fillFrequency || '' %>" placeholder="π.χ. Ανά 2 μέρες">
+                    </div>
+                    <div class="col-12">
                         <label class="form-label">Σημειώσεις</label>
                         <input type="text" name="notes" class="form-control" value="<%= log.notes || '' %>">
                     </div>
