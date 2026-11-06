@@ -21,7 +21,9 @@ app.get('/', async (req, res) => {
         let filter = {};
         
         if (selectedFuel) {
-            filter.unit = new RegExp(selectedFuel, 'i');
+            // Διόρθωση: Διαφυγή ειδικών χαρακτήρων (όπως παρενθέσεις) για σωστό φιλτράρισμα
+            const escapedFuel = selectedFuel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.unit = new RegExp(escapedFuel, 'i');
         }
 
         if (selectedYear) {
