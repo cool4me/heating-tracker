@@ -16,11 +16,11 @@
                     <input type="date" name="date" class="form-control" required value="<%= log.date ? new Date(log.date).toISOString().split('T')[0] : '' %>">
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Είδος Καυσίμου</label>
+                    <label class="form-label">Κατηγορία</label>
                     <input type="text" name="unit" class="form-control" required value="<%= log.unit %>" readonly>
                 </div>
 
-                <% if (log.unit && log.unit.includes('Ξύλα')) { %>
+                <% if (log.unit && log.unit.includes('Ξύλα (Έξοδα)')) { %>
                     <div class="col-12">
                         <div class="row g-3 p-3 bg-light border rounded">
                             <h5 class="text-success mb-2 fs-6">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
@@ -49,6 +49,15 @@
                                 <input type="number" step="any" name="accessories" class="form-control" value="<%= log.accessories || 0 %>">
                             </div>
                         </div>
+                    </div>
+                <% } else if (log.unit && log.unit.includes('Ξύλα (Κατανάλωση)')) { %>
+                    <div class="col-md-6">
+                        <label class="form-label">Ποσότητα / Κλούβες</label>
+                        <input type="number" step="any" name="amount" class="form-control" value="<%= log.amount || 0 %>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Σημειώσεις</label>
+                        <input type="text" name="notes" class="form-control" value="<%= log.notes || '' %>">
                     </div>
                 <% } else { %>
                     <div class="col-md-6">

@@ -23,11 +23,11 @@
                 <% }) %>
             </div>
 
-            <h5 class="mb-3 fs-6">🔥 Επιλέξτε Καύσιμο:</h5>
+            <h5 class="mb-3 fs-6">🔥 Επιλέξτε Καύσιμο / Κατηγορία:</h5>
             <div class="d-flex flex-wrap gap-2">
-                <a href="/?<%= selectedYear ? 'year=' + selectedYear : '' %>" class="btn <%= !selectedFuel ? 'btn-dark' : 'btn-outline-dark' %> btn-sm">Όλα τα καύσιμα</a>
+                <a href="/?<%= selectedYear ? 'year=' + selectedYear : '' %>" class="btn <%= !selectedFuel ? 'btn-dark' : 'btn-outline-dark' %> btn-sm">Όλα</a>
                 <% fuels.forEach(f => { %>
-                    <a href="/?fuel=<%= f %><%= selectedYear ? '&year=' + selectedYear : '' %>" 
+                    <a href="/?fuel=<%= encodeURIComponent(f) %><%= selectedYear ? '&year=' + selectedYear : '' %>" 
                        class="btn <%= selectedFuel === f ? 'btn-primary' : 'btn-outline-primary' %> btn-sm">
                         <%= f %>
                     </a>
@@ -35,10 +35,10 @@
             </div>
         </div>
 
-        <!-- Ανάλυση Εξόδων ανά Θέρμανση για την Επιλεγμένη Χρονιά -->
+        <!-- Ανάλυση Εξόδων & Κατανάλωσης για την Επιλεγμένη Χρονιά -->
         <% if (selectedYear && Object.keys(yearlyFuelBreakdown).length > 0) { %>
             <div class="card mb-4 p-3 shadow-sm border-success">
-                <h4 class="text-success mb-3 fs-5">📊 Ανάλυση Εξόδων για το έτος <%= selectedYear %></h4>
+                <h4 class="text-success mb-3 fs-5">📊 Σύνοψη για το έτος <%= selectedYear %></h4>
                 <div class="row mb-3">
                     <% Object.entries(yearlyFuelBreakdown).forEach(([fuelName, cost]) => { %>
                         <div class="col-md-4 mb-2">
@@ -76,11 +76,18 @@
                         </div>
                     </div>
                 <% } %>
+
+                <% if (selectedYear && woodTotals.consumedAmount > 0) { %>
+                    <div class="mt-3 p-2 bg-white rounded border text-center">
+                        <span class="text-muted small">🔥 Συνολική Κατανάλωση Ξύλων (Κλούβες / Ποσότητα):</span>
+                        <h4 class="text-danger fw-bold mb-0"><%= woodTotals.consumedAmount %> μονάδες</h4>
+                    </div>
+                <% } %>
             </div>
         <% } %>
 
         <!-- Εμφάνιση Συνολικής Δαπάνης όταν επιλεγεί καύσιμο -->
-        <% if (selectedFuel) { %>
+        <% if (selectedFuel && !selectedFuel.includes('Κατανάλωση')) { %>
             <div class="row mb-4">
                 <div class="col-md-12">
                     <div class="card bg-light p-3 border-primary shadow-sm">
@@ -100,15 +107,16 @@
                     <input type="date" name="date" class="form-control" required value="<%= new Date().toISOString().split('T')[0] %>">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Είδος Καυσίμου</label>
-                    <select name="unit" class="form-select" id="unitSelect" onchange="toggleWoodFields()">
+                    <label class="form-label">Κατηγορία / Είδος</label>
+                    <select name="unit" class="form-select" id="unitSelect" onchange="toggleFormFields()">
                         <option value="Πέλλετ">Πέλλετ</option>
-                        <option value="Ξύλα" selected>Ξύλα</option>
+                        <option value="Ξύλα (Έξοδα)" selected>Ξύλα (Έξοδα)</option>
+                        <option value="Ξύλα (Κατανάλωση)">Ξύλα (Κατανάλωση - Γέμισμα Κλούβας)</option>
                         <option value="Πετρέλαιο">Πετρέλαιο</option>
                     </select>
                 </div>
 
-                <!-- Κλασικά πεδία (για Πέλλετ / Πετρέλαιο) -->
+                <!-- Κλασικά πεδία (Πέλλετ / Πετρέλαιο) -->
                 <div class="col-md-4 standard-fields" style="display:none;">
                     <label class="form-label">Ποσότητα (Kg / Λίτρα)</label>
                     <input type="number" step="any" name="amount" class="form-control" value="0">
@@ -122,8 +130,23 @@
                     <input type="text" name="notes" class="form-control" placeholder="Προαιρετικές σημειώσεις...">
                 </div>
 
-                <!-- Ειδικά πεδία για Ξύλα -->
-                <div class="col-12 wood-fields">
+                <!-- Πεδία Κατανάλωσης Ξύλων (Γέμισμα Κλούβας) -->
+                <div class="col-12 consumption-fields" style="display:none;">
+                    <div class="row g-3 p-3 bg-white border rounded">
+                        <h5 class="text-danger mb-2 fs-6">🔥 Καταγραφή Κατανάλωσης / Γεμίσματος Κλούβας</h5>
+                        <div class="col-md-6">
+                            <label class="form-label">Ποσότητα / Κλούβες (π.χ. 1, 2...)</label>
+                            <input type="number" step="any" name="amount" class="form-control" value="1" placeholder="π.χ. 1 κλούβα">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Σημειώσεις</label>
+                            <input type="text" name="notes" class="form-control" placeholder="π.χ. Γέμισμα κλούβας">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ειδικά πεδία για Έξοδα Ξύλων -->
+                <div class="col-12 wood-expense-fields">
                     <div class="row g-3 p-3 bg-white border rounded">
                         <h5 class="text-success mb-2 fs-6">🪵 Αναλυτικά Έξοδα Ξύλων</h5>
                         <div class="col-md-4">
@@ -168,7 +191,7 @@
                         <thead>
                             <tr>
                                 <th>Ημερομηνία</th>
-                                <% if (selectedFuel === 'Ξύλα') { %>
+                                <% if (selectedFuel && selectedFuel.includes('Ξύλα (Έξοδα)')) { %>
                                     <th>Όχημα</th>
                                     <th>Βενζ. Vitara</th>
                                     <th>Βενζ. Αλυσοπρ.</th>
@@ -176,6 +199,10 @@
                                     <th>Λάδι Mix</th>
                                     <th>Παρελκόμενα</th>
                                     <th>Σύνολο</th>
+                                <% } else if (selectedFuel && selectedFuel.includes('Ξύλα (Κατανάλωση)')) { %>
+                                    <th>Κατηγορία</th>
+                                    <th>Ποσότητα / Κλούβες</th>
+                                    <th>Σημειώσεις</th>
                                 <% } else { %>
                                     <th>Καύσιμο</th>
                                     <th>Ποσότητα</th>
@@ -190,7 +217,7 @@
                                 <% logs.forEach(log => { %>
                                     <tr>
                                         <td><%= new Date(log.date).toLocaleDateString('el-GR') %></td>
-                                        <% if (selectedFuel === 'Ξύλα') { %>
+                                        <% if (log.unit.includes('Ξύλα (Έξοδα)')) { %>
                                             <td><%= log.vehicle || '-' %></td>
                                             <td><%= (log.gasVitara || 0).toFixed(2) %> €</td>
                                             <td><%= (log.gasChainsaw || 0).toFixed(2) %> €</td>
@@ -198,6 +225,10 @@
                                             <td><%= (log.oilMix || 0).toFixed(2) %> €</td>
                                             <td><%= (log.accessories || 0).toFixed(2) %> €</td>
                                             <td><strong><%= (log.totalCost || 0).toFixed(2) %> €</strong></td>
+                                        <% } else if (log.unit.includes('Ξύλα (Κατανάλωση)')) { %>
+                                            <td><strong><%= log.unit %></strong></td>
+                                            <td><%= log.amount %> κλούβα/ες</td>
+                                            <td><%= log.notes || '-' %></td>
                                         <% } else { %>
                                             <td><strong><%= log.unit %></strong></td>
                                             <td><%= log.amount %></td>
@@ -216,7 +247,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="<%= selectedFuel === 'Ξύλα' ? 9 : 6 %>" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις.</td>
+                                    <td colspan="9" class="text-center text-muted">Δεν βρέθηκαν καταχωρήσεις.</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -227,20 +258,25 @@
     </div>
 
     <script>
-        function toggleWoodFields() {
+        function toggleFormFields() {
             const unit = document.getElementById('unitSelect').value;
-            const woodFields = document.querySelector('.wood-fields');
+            const woodExpenseFields = document.querySelector('.wood-expense-fields');
+            const consumptionFields = document.querySelector('.consumption-fields');
             const standardFields = document.querySelectorAll('.standard-fields');
 
-            if (unit === 'Ξύλα') {
-                woodFields.style.display = 'block';
-                standardFields.forEach(el => el.style.display = 'none');
+            woodExpenseFields.style.display = 'none';
+            consumptionFields.style.display = 'none';
+            standardFields.forEach(el => el.style.display = 'none');
+
+            if (unit === 'Ξύλα (Έξοδα)') {
+                woodExpenseFields.style.display = 'block';
+            } else if (unit === 'Ξύλα (Κατανάλωση)') {
+                consumptionFields.style.display = 'block';
             } else {
-                woodFields.style.display = 'none';
                 standardFields.forEach(el => el.style.display = 'block');
             }
         }
-        toggleWoodFields();
+        toggleFormFields();
     </script>
 </body>
 </html>

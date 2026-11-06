@@ -35,7 +35,11 @@ app.get('/', async (req, res) => {
             logs = await HeatingLog.find(filter).sort({ date: -1 });
         }
         
-        let totalSpent = logs.reduce((sum, log) => sum + (log.totalCost || 0), 0);
+        let totalSpent = logs.reduce((sum, log) => {
+            // Υπολογίζουμε συνολικό κόστος μόνο για έξοδα (όχι για κατανάλωση ξύλων)
+            if (log.unit && log.unit.includes('Κατανάλωση')) return sum;
+            return sum + (log.totalCost || 0);
+        }, 0);
 
         let yearlyFuelBreakdown = {};
         let woodTotals = {
@@ -44,7 +48,8 @@ app.get('/', async (req, res) => {
             oilChainsaw: 0,
             oilMix: 0,
             accessories: 0,
-            total: 0
+            total: 0,
+            consumedAmount: 0
         };
 
         if (selectedYear) {
@@ -54,18 +59,23 @@ app.get('/', async (req, res) => {
             
             yearLogs.forEach(log => {
                 const baseUnit = log.unit.replace(' (Αγορά)', '').trim();
-                if (!yearlyFuelBreakdown[baseUnit]) {
-                    yearlyFuelBreakdown[baseUnit] = 0;
+                
+                if (!baseUnit.includes('Κατανάλωση')) {
+                    if (!yearlyFuelBreakdown[baseUnit]) {
+                        yearlyFuelBreakdown[baseUnit] = 0;
+                    }
+                    yearlyFuelBreakdown[baseUnit] += (log.totalCost || 0);
                 }
-                yearlyFuelBreakdown[baseUnit] += (log.totalCost || 0);
 
-                if (baseUnit.includes('Ξύλα')) {
+                if (baseUnit.includes('Ξύλα (Έξοδα)')) {
                     woodTotals.gasVitara += (log.gasVitara || 0);
                     woodTotals.gasChainsaw += (log.gasChainsaw || 0);
                     woodTotals.oilChainsaw += (log.oilChainsaw || 0);
                     woodTotals.oilMix += (log.oilMix || 0);
                     woodTotals.accessories += (log.accessories || 0);
                     woodTotals.total += (log.totalCost || 0);
+                } else if (baseUnit.includes('Ξύλα (Κατανάλωση)')) {
+                    woodTotals.consumedAmount += (log.amount || 0);
                 }
             });
         }
@@ -108,20 +118,22 @@ app.post('/edit/:id', async (req, res) => {
         const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
         
         let finalCost = totalCost;
-        if (unit.includes('Ξύλα')) {
+        if (unit.includes('Ξύλα (Έξοδα)')) {
             finalCost = (parseFloat(gasVitara) || 0) + 
                         (parseFloat(gasChainsaw) || 0) + 
                         (parseFloat(oilChainsaw) || 0) + 
                         (parseFloat(oilMix) || 0) + 
                         (parseFloat(accessories) || 0);
+        } else if (unit.includes('Ξύλα (Κατανάλωση)')) {
+            finalCost = 0; // Η κατανάλωση δεν έχει κόστος αγοράς, μετράει ποσότητα/κλούβα
         }
 
         await HeatingLog.findByIdAndUpdate(req.params.id, {
             date: date ? new Date(date) : new Date(),
             unit,
-            amount: amount || 0,
+            amount: parseFloat(amount) || 0,
             totalCost: finalCost || 0,
-            notes,
+            notes: notes || '',
             vehicle: vehicle || '',
             gasVitara: parseFloat(gasVitara) || 0,
             gasChainsaw: parseFloat(gasChainsaw) || 0,
@@ -141,12 +153,16 @@ app.post('/add', async (req, res) => {
         const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories } = req.body;
         
         let calculatedCost = totalCost;
-        if (unit.includes('Ξύλα')) {
+        let finalAmount = amount || 0;
+
+        if (unit.includes('Ξύλα (Έξοδα)')) {
             calculatedCost = (parseFloat(gasVitara) || 0) + 
                              (parseFloat(gasChainsaw) || 0) + 
                              (parseFloat(oilChainsaw) || 0) + 
                              (parseFloat(oilMix) || 0) + 
                              (parseFloat(accessories) || 0);
+        } else if (unit.includes('Ξύλα (Κατανάλωση)')) {
+            calculatedCost = 0;
         } else if ((!totalCost || totalCost == 0) && unitPrice && amount) {
             calculatedCost = amount * unitPrice;
         }
@@ -154,10 +170,10 @@ app.post('/add', async (req, res) => {
         const newLog = new HeatingLog({
             date: date ? new Date(date) : new Date(),
             unit,
-            amount: amount || 0,
-            unitPrice: unitPrice || 0,
-            totalCost: calculatedCost || 0,
-            notes,
+            amount: parseFloat(finalAmount) || 0,
+            unitPrice: parseFloat(unitPrice) || 0,
+            totalCost: parseFloat(calculatedCost) || 0,
+            notes: notes || '',
             vehicle: vehicle || '',
             gasVitara: parseFloat(gasVitara) || 0,
             gasChainsaw: parseFloat(gasChainsaw) || 0,
