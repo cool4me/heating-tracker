@@ -57,7 +57,7 @@ app.get('/', async (req, res) => {
             const yearLogs = await HeatingLog.find({ date: { $gte: yearStart, $lte: yearEnd } });
             
             yearLogs.forEach(log => {
-                const baseUnit = log.unit.replace(' (Αγορά)', '').trim();
+                const baseUnit = (log.unit || '').replace(' (Αγορά)', '').trim();
                 
                 if (!baseUnit.includes('Κατανάλωση')) {
                     if (!yearlyFuelBreakdown[baseUnit]) {
@@ -80,7 +80,7 @@ app.get('/', async (req, res) => {
         }
 
         const allLogs = await HeatingLog.find({});
-        const fuels = [...new Set(allLogs.map(l => l.unit.replace(' (Αγορά)', '').trim()))];
+        const fuels = [...new Set(allLogs.map(l => (l.unit || '').replace(' (Αγορά)', '').trim()))];
         const years = [...new Set(allLogs.map(l => new Date(l.date).getFullYear()))].filter(y => !isNaN(y)).sort((a, b) => b - a);
 
         res.render('index', { 
@@ -115,21 +115,22 @@ app.get('/edit/:id', async (req, res) => {
 app.post('/edit/:id', async (req, res) => {
     try {
         const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
+        const unitStr = unit || '';
         
         let finalCost = totalCost;
-        if (unit.includes('Ξύλα (Έξοδα)')) {
+        if (unitStr.includes('Ξύλα (Έξοδα)')) {
             finalCost = (parseFloat(gasVitara) || 0) + 
                         (parseFloat(gasChainsaw) || 0) + 
                         (parseFloat(oilChainsaw) || 0) + 
                         (parseFloat(oilMix) || 0) + 
                         (parseFloat(accessories) || 0);
-        } else if (unit.includes('Ξύλα (Κατανάλωση)')) {
+        } else if (unitStr.includes('Ξύλα (Κατανάλωση)')) {
             finalCost = 0;
         }
 
         await HeatingLog.findByIdAndUpdate(req.params.id, {
             date: date ? new Date(date) : new Date(),
-            unit,
+            unit: unitStr,
             amount: parseFloat(amount) || 0,
             totalCost: finalCost || 0,
             notes: notes || '',
@@ -151,17 +152,18 @@ app.post('/edit/:id', async (req, res) => {
 app.post('/add', async (req, res) => {
     try {
         const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
+        const unitStr = unit || 'Πέλλετ';
         
         let calculatedCost = totalCost;
         let finalAmount = amount || 0;
 
-        if (unit.includes('Ξύλα (Έξοδα)')) {
+        if (unitStr.includes('Ξύλα (Έξοδα)')) {
             calculatedCost = (parseFloat(gasVitara) || 0) + 
                              (parseFloat(gasChainsaw) || 0) + 
                              (parseFloat(oilChainsaw) || 0) + 
                              (parseFloat(oilMix) || 0) + 
                              (parseFloat(accessories) || 0);
-        } else if (unit.includes('Ξύλα (Κατανάλωση)')) {
+        } else if (unitStr.includes('Ξύλα (Κατανάλωση)')) {
             calculatedCost = 0;
         } else if ((!totalCost || totalCost == 0) && unitPrice && amount) {
             calculatedCost = amount * unitPrice;
@@ -169,7 +171,7 @@ app.post('/add', async (req, res) => {
 
         const newLog = new HeatingLog({
             date: date ? new Date(date) : new Date(),
-            unit,
+            unit: unitStr,
             amount: parseFloat(finalAmount) || 0,
             unitPrice: parseFloat(unitPrice) || 0,
             totalCost: parseFloat(calculatedCost) || 0,
@@ -186,7 +188,7 @@ app.post('/add', async (req, res) => {
         await newLog.save();
         res.redirect('/');
     } catch (err) {
-        console.error(err);
+        console.error("Error in /add:", err);
         res.status(500).send("Server Error during add");
     }
 });
