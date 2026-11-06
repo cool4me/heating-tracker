@@ -114,9 +114,12 @@ app.get('/edit/:id', async (req, res) => {
 
 app.post('/edit/:id', async (req, res) => {
     try {
-        const { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
-        const unitStr = unit || '';
+        let { date, unit, amount, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
         
+        if (Array.isArray(amount)) amount = amount.find(v => v !== '' && v !== undefined) || 0;
+        if (Array.isArray(notes)) notes = notes.find(v => v !== '' && v !== undefined) || '';
+
+        const unitStr = unit || '';
         let finalCost = totalCost;
         if (unitStr.includes('Ξύλα (Έξοδα)')) {
             finalCost = (parseFloat(gasVitara) || 0) + 
@@ -153,7 +156,11 @@ app.post('/edit/:id', async (req, res) => {
 
 app.post('/add', async (req, res) => {
     try {
-        const { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
+        let { date, unit, amount, unitPrice, totalCost, notes, vehicle, gasVitara, gasChainsaw, oilChainsaw, oilMix, accessories, fillFrequency } = req.body;
+        
+        if (Array.isArray(amount)) amount = amount.find(v => v !== '' && v !== undefined) || 0;
+        if (Array.isArray(notes)) notes = notes.find(v => v !== '' && v !== undefined) || '';
+
         const unitStr = unit || 'Πέλλετ';
         
         let calculatedCost = totalCost;
